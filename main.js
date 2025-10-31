@@ -5,7 +5,6 @@ import fs from "fs";
 import TelegramBot from "node-telegram-bot-api";
 import nodeCron from "node-cron";
 import dotenv from "dotenv";
-import puppeteer from "puppeteer";
 dotenv.config();
 
 const SEARCH_TEXT = process.env.SEARCH_TEXT;
@@ -56,66 +55,16 @@ bot.onText(/\/start/, (msg) => {
   );
 });
 const makeGetRequest = async (url) => {
-  let browser = null;
-  try {
-    // Запускаем браузер
-    browser = await puppeteer.launch({
-      headless: true,
-      // 'args' важны для запуска на серверах Linux (VPS/VDS)
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
-    const page = await browser.newPage();
-
-    // Устанавливаем User-Agent, как у реального браузера (это все еще важно)
-    await page.setUserAgent(
+  const headers = {
+    "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
-    );
+  };
+  const agent = new https.Agent({
+    rejectUnauthorized: false,
+  });
 
-    console.log(`Перехожу на ${url}...`);
-
-    // Переходим на страницу и ждем, пока сеть успокоится (JS выполнится)
-    // Увеличиваем таймаут до 30 секунд, т.к. Puppeteer медленнее
-    await page.goto(url, {
-      waitUntil: "domcontentloaded", // Ждем только HTML (быстро)
-      timeout: 60000, // Даем 60 секунд на всякий случай
-    });
-    console.log("Страница загружена, получаю HTML...");
-
-    // Получаем полный HTML-контент страницы ПОСЛЕ выполнения JavaScript
-    const htmlData = await page.content();
-
-    return htmlData;
-  } catch (error) {
-    console.error("Ошибка при выполнении Puppeteer:", error);
-    throw error;
-  } finally {
-    await browser.close();
-  }
-  // const proxyHost = "38.54.71.67";
-  // const proxyPort = 80; // <-- ВАМ НУЖНО НАЙТИ ПРАВИЛЬНЫЙ ПОРТ!
-  // const headers = {
-  //   "User-Agent":
-  //     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
-  // };
-  // const agent = new https.Agent({
-  //   rejectUnauthorized: false,
-  // });
-
-  // const responce = await axios.get(url, {
-  //   // headers,
-  //   // httpsAgent: agent,
-  //   proxy: {
-  //     protocol: "http",
-  //     host: proxyHost,
-  //     port: proxyPort,
-  //     // auth: {
-  //     //   username: "myuser", // <-- нужен логин
-  //     //   password: "GAz!R,6NSUHsQA$e", // <-- нужен пароль
-  //     // },
-  //   },
-  // });
-  // return responce.data;
+  const responce = await axios.get(url, { headers });
+  return responce.data;
 };
 const processPage = async (data) => {
   const $ = cheerio.load(data);
