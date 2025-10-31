@@ -63,7 +63,7 @@ const makeGetRequest = async (url) => {
     rejectUnauthorized: false,
   });
 
-  const responce = await axios.get(url, { headers });
+  const responce = await axios.get(url, { headers, insecureHTTPParser: true });
   return responce.data;
 };
 const processPage = async (data) => {
