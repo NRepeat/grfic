@@ -158,7 +158,7 @@ const main = async () => {
   }
 };
 
-nodeCron.schedule("* * * * *", () => {
+nodeCron.schedule("*/10 * * * *", () => {
   main();
 });
 
