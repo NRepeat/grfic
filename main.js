@@ -55,11 +55,15 @@ bot.onText(/\/start/, (msg) => {
   );
 });
 const makeGetRequest = async (url) => {
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+  };
   const agent = new https.Agent({
     rejectUnauthorized: false,
   });
 
-  const responce = await axios.get(url, { httpsAgent: agent });
+  const responce = await axios.get(url, { headers });
   return responce.data;
 };
 const processPage = async (data) => {
@@ -95,24 +99,22 @@ const processPage = async (data) => {
   let foundSchedules = [];
   let count = 0;
   $("p").each((index, element) => {
+    if (count >= 2) {
+      return;
+    }
     const pText = $(element).text().trim();
     for (const queuePrefix of TARGET_QUEUES) {
-      if (oldContent && pText.includes(oldContent)) {
-        break;
-      }
-      if (pText.includes(SEARCH_TEXT) && count >= 0) {
-        console.log("Found search text:", pText);
-        count++;
-        break;
-      }
-      if (pText.startsWith(queuePrefix) && count <= 1) {
-        count++;
+      if (pText.startsWith(queuePrefix)) {
         foundSchedules.push(pText);
         break;
       }
     }
+    if (pText.includes(SEARCH_TEXT) && count >= 0) {
+      console.log("Found search text:", pText);
+      count++;
+    }
+    console.log("Processed paragraph:", pText, count);
   });
-
   let notificationContent;
   const header = `🔔 **ОНОВЛЕННЯ ГРАФІКІВ!** 🔔\n\n${updateTimestampLine}`;
 
