@@ -76,8 +76,10 @@ const makeGetRequest = async (url) => {
 
     // Переходим на страницу и ждем, пока сеть успокоится (JS выполнится)
     // Увеличиваем таймаут до 30 секунд, т.к. Puppeteer медленнее
-    await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
-
+    await page.goto(url, {
+      waitUntil: "domcontentloaded", // Ждем только HTML (быстро)
+      timeout: 60000, // Даем 60 секунд на всякий случай
+    });
     console.log("Страница загружена, получаю HTML...");
 
     // Получаем полный HTML-контент страницы ПОСЛЕ выполнения JavaScript
