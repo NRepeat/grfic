@@ -118,7 +118,7 @@ const processPage = async (data) => {
   let notificationContent;
   const header = `🔔 **ОНОВЛЕННЯ ГРАФІКІВ!** 🔔\n\n${updateTimestampLine}`;
 
-  notificationContent = `${header}\n\n**Знайдено розклад для ваших черг:**\n${foundSchedules.join("\n")}`;
+  notificationContent = `${header}\n\n**Знайдено розклад для ваших черг**\n${foundSchedules.join("\n")}`;
   await sendNotification(notificationContent);
 
   fs.writeFileSync(STORAGE_FILE, updateTimestampLine, "utf8");
