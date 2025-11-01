@@ -103,6 +103,12 @@ const processPage = async (data) => {
       return;
     }
     const pText = $(element).text().trim();
+    for (const queuePrefix of TARGET_QUEUES) {
+      if (pText.startsWith(queuePrefix)) {
+        foundSchedules.push(pText);
+        break;
+      }
+    }
     if (pText.includes(SEARCH_TEXT) && count >= 0) {
       console.log("Found search text:", pText);
       count++;
