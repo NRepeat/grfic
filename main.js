@@ -7,7 +7,6 @@ import nodeCron from "node-cron";
 import dotenv from "dotenv";
 dotenv.config();
 
-const SEARCH_TEXT = process.env.SEARCH_TEXT;
 const TARGET_QUEUES = process.env.TARGET_QUEUES.split(",");
 
 const STORAGE_FILE = process.env.STORAGE_FILE;
@@ -68,17 +67,44 @@ const makeGetRequest = async (url) => {
 };
 const processPage = async (data) => {
   const $ = cheerio.load(data);
-  let updateTimestampLine = null;
+
+  let newContentForCheck = null;
+  let fullHeadingText = null;
+  let scheduleText = null;
+
   $("p").each((index, element) => {
-    const pText = $(element).text().trim();
-    if (pText.toLowerCase().includes(SEARCH_TEXT.toLocaleLowerCase())) {
-      updateTimestampLine = pText;
-      return false;
+    const p = $(element);
+
+    const redSpan = p
+      .find("span")
+      .filter((i, el) => {
+        const style = $(el).attr("style") || "";
+        return /color\s*:\s*(red|#ff0000)/i.test(style);
+      })
+      .first();
+
+    if (redSpan.length) {
+      const changedPart = redSpan.text().trim();
+
+      // Check if the span has actual text content
+      if (changedPart.length > 0) {
+        fullHeadingText = p.text();
+
+        const nextP = p.nextAll("p").first();
+        if (nextP.length) {
+          scheduleText = nextP.text().trim();
+        } else {
+          scheduleText = "";
+        }
+
+        newContentForCheck = `${changedPart}\n${scheduleText}`;
+        return false; // Exit .each loop because we found a valid span
+      }
     }
   });
 
-  if (!updateTimestampLine) {
-    console.log(`Не найден текст триггера "${SEARCH_TEXT}".`);
+  if (!newContentForCheck) {
+    console.log(`Не найден span с красным текстом и содержимым.`);
     return;
   }
 
@@ -87,41 +113,20 @@ const processPage = async (data) => {
     oldContent = fs.readFileSync(STORAGE_FILE, "utf8");
   }
 
-  if (oldContent === updateTimestampLine) {
+  if (oldContent === newContentForCheck) {
     console.log("No changes detected.");
     return;
   }
 
   console.log("Content has changed!");
   console.log("Old:", oldContent);
-  console.log("New:", updateTimestampLine);
+  console.log("New:", fullHeadingText);
 
-  let foundSchedules = [];
-  let count = 0;
-  $("p").each((index, element) => {
-    if (count >= 2) {
-      return;
-    }
-    const pText = $(element).text().trim();
-    for (const queuePrefix of TARGET_QUEUES) {
-      if (pText.startsWith(queuePrefix)) {
-        foundSchedules.push(pText);
-        break;
-      }
-    }
-    if (pText.includes(SEARCH_TEXT) && count >= 0) {
-      console.log("Found search text:", pText);
-      count++;
-    }
-    console.log("Processed paragraph:", pText, count);
-  });
-  let notificationContent;
-  const header = `🔔 **ОНОВЛЕННЯ ГРАФІКІВ!** 🔔\n\n${updateTimestampLine}`;
+  const notificationContent = fullHeadingText;
 
-  notificationContent = `${header}\n\n**Знайдено розклад для ваших черг**\n${foundSchedules.join("\n")}`;
   await sendNotification(notificationContent);
 
-  fs.writeFileSync(STORAGE_FILE, updateTimestampLine, "utf8");
+  fs.writeFileSync(STORAGE_FILE, newContentForCheck, "utf8");
 };
 async function sendNotification(messageContent) {
   console.log("ОБНАРУЖЕНО ИЗМЕНЕНИЕ! Начинаю рассылку...", messageContent);
