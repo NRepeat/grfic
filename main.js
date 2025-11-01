@@ -103,12 +103,6 @@ const processPage = async (data) => {
       return;
     }
     const pText = $(element).text().trim();
-    for (const queuePrefix of TARGET_QUEUES) {
-      if (pText.startsWith(queuePrefix)) {
-        foundSchedules.push(pText);
-        break;
-      }
-    }
     if (pText.includes(SEARCH_TEXT) && count >= 0) {
       console.log("Found search text:", pText);
       count++;
@@ -118,11 +112,7 @@ const processPage = async (data) => {
   let notificationContent;
   const header = `🔔 **ОНОВЛЕННЯ ГРАФІКІВ!** 🔔\n\n${updateTimestampLine}`;
 
-  if (foundSchedules.length === 0) {
-    notificationContent = `${header}\n\n**Важливо:** Оновлення було, але розклад для черг ${TARGET_QUEUES.join(", ")} не знайдено на сторінці.`;
-  } else {
-    notificationContent = `${header}\n\n**Знайдено розклад для ваших черг:**\n${foundSchedules.join("\n")}`;
-  }
+  notificationContent = `${header}\n\n**Знайдено розклад для ваших черг:**\n${foundSchedules.join("\n")}`;
   await sendNotification(notificationContent);
 
   fs.writeFileSync(STORAGE_FILE, updateTimestampLine, "utf8");
