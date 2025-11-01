@@ -71,7 +71,7 @@ const processPage = async (data) => {
   let updateTimestampLine = null;
   $("p").each((index, element) => {
     const pText = $(element).text().trim();
-    if (pText.includes(SEARCH_TEXT)) {
+    if (pText.toLowerCase().includes(SEARCH_TEXT.toLocaleLowerCase())) {
       updateTimestampLine = pText;
       return false;
     }
