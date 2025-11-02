@@ -97,7 +97,7 @@ const processPage = async (data) => {
           scheduleText = "";
         }
 
-        newContentForCheck = `${changedPart}\n${scheduleText}`;
+        c = `${changedPart}\n${scheduleText}`;
         return false; // Exit .each loop because we found a valid span
       }
     }
@@ -122,7 +122,7 @@ const processPage = async (data) => {
   console.log("Old:", oldContent);
   console.log("New:", fullHeadingText);
 
-  const notificationContent = fullHeadingText;
+  const notificationContent = newContentForCheck;
 
   await sendNotification(notificationContent);
 
