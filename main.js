@@ -97,7 +97,7 @@ const processPage = async (data) => {
           scheduleText = "";
         }
 
-        c = `${changedPart}\n${scheduleText}`;
+        scheduleText = `${changedPart}\n${scheduleText}`;
         return false; // Exit .each loop because we found a valid span
       }
     }
