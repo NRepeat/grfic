@@ -99,17 +99,13 @@ const processPage = async (data) => {
     }
   });
 
-  // *** FIX 1: Check for foundMessage, not newContentForCheck ***
   if (!foundMessage) {
-    // *** FIX 2: Updated the error message to be logical ***
     console.log(`Не найден <p> тег, который содержит все очереди.`);
-    return; // Exit if no matching <p> was found
+    return;
   }
 
-  // *** FIX 3: Assign the content you found to the variables ***
   const newContentForCheck = foundMessage;
-  const fullHeadingText = foundMessage; // Assuming this should also be the same content
-
+  const fullHeadingText = foundMessage;
   let oldContent = "";
   if (fs.existsSync(STORAGE_FILE)) {
     oldContent = fs.readFileSync(STORAGE_FILE, "utf8");
@@ -126,7 +122,7 @@ const processPage = async (data) => {
 
   // Make sure sendNotification is defined and imported
   console.log("Pretending to send notification:", notificationContent);
-  sendNotification(messageContent);
+  sendNotification(notificationContent);
   fs.writeFileSync(STORAGE_FILE, newContentForCheck, "utf8");
 };
 async function sendNotification(messageContent) {
