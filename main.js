@@ -7,7 +7,7 @@ import nodeCron from "node-cron";
 import dotenv from "dotenv";
 dotenv.config();
 
-const TARGET_QUEUES = process.env.TARGET_QUEUES.split(",");
+// const TARGET_QUEUES = process.env.TARGET_QUEUES.split(",");
 
 const STORAGE_FILE = process.env.STORAGE_FILE;
 const SUBSCRIBER_FILE = process.env.SUBSCRIBER_FILE;
@@ -65,48 +65,50 @@ const makeGetRequest = async (url) => {
   const responce = await axios.get(url, { headers, httpsAgent: agent });
   return responce.data;
 };
+
 const processPage = async (data) => {
   const $ = cheerio.load(data);
 
-  let newContentForCheck = null;
-  let fullHeadingText = null;
-  let scheduleText = null;
+  const TARGET_QUEUES = [
+    "1.1",
+    "1.2",
+    "2.1",
+    "2.2",
+    "3.1",
+    "3.2",
+    "4.1",
+    "4.2",
+    "5.1",
+    "5.2",
+    "6.1",
+    "6.2",
+  ];
+
+  let foundMessage = ""; // This will store the text from the <p> tag
 
   $("p").each((index, element) => {
-    const p = $(element);
+    if (foundMessage) {
+      return false; // Stop the loop once we find a match
+    }
 
-    const redSpan = p
-      .find("span")
-      .filter((i, el) => {
-        const style = $(el).attr("style") || "";
-        return /color\s*:\s*(red|#ff0000)/i.test(style);
-      })
-      .first();
+    const pText = $(element).text();
+    const includesAll = TARGET_QUEUES.every((queue) => pText.includes(queue));
 
-    if (redSpan.length) {
-      const changedPart = redSpan.text().trim();
-
-      // Check if the span has actual text content
-      if (changedPart.length > 0) {
-        fullHeadingText = p.text();
-
-        const nextP = p.nextAll("p").first();
-        if (nextP.length) {
-          scheduleText = nextP.text().trim();
-        } else {
-          scheduleText = "";
-        }
-
-        scheduleText = `${changedPart}\n${scheduleText}`;
-        return false; // Exit .each loop because we found a valid span
-      }
+    if (includesAll) {
+      foundMessage = pText; // Save the text
     }
   });
 
-  if (!newContentForCheck) {
-    console.log(`Не найден span с красным текстом и содержимым.`);
-    return;
+  // *** FIX 1: Check for foundMessage, not newContentForCheck ***
+  if (!foundMessage) {
+    // *** FIX 2: Updated the error message to be logical ***
+    console.log(`Не найден <p> тег, который содержит все очереди.`);
+    return; // Exit if no matching <p> was found
   }
+
+  // *** FIX 3: Assign the content you found to the variables ***
+  const newContentForCheck = foundMessage;
+  const fullHeadingText = foundMessage; // Assuming this should also be the same content
 
   let oldContent = "";
   if (fs.existsSync(STORAGE_FILE)) {
@@ -119,13 +121,12 @@ const processPage = async (data) => {
   }
 
   console.log("Content has changed!");
-  console.log("Old:", oldContent);
-  console.log("New:", fullHeadingText);
 
   const notificationContent = newContentForCheck;
 
-  await sendNotification(notificationContent);
-
+  // Make sure sendNotification is defined and imported
+  console.log("Pretending to send notification:", notificationContent);
+  sendNotification(messageContent);
   fs.writeFileSync(STORAGE_FILE, newContentForCheck, "utf8");
 };
 async function sendNotification(messageContent) {
@@ -154,7 +155,6 @@ const main = async () => {
     const responce = await makeGetRequest(
       encodeURI("https://www.zoe.com.ua/графіки-погодинних-стабілізаційних"),
     );
-
     await processPage(responce);
   } catch (e) {
     console.error(e);
