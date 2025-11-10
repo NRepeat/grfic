@@ -134,7 +134,7 @@ const processPage = async (data) => {
     foundMessage += foundSpan;
     foundMessage += "\n";
     TARGET_QUEUES.forEach((queue) => {
-      foundMessage += queue + " " + hash[queue] + "\n";
+      foundMessage += hash[queue] + "\n";
     });
   }
   if (!foundMessage) {
