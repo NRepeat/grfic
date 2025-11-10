@@ -70,42 +70,78 @@ const processPage = async (data) => {
   const $ = cheerio.load(data);
 
   const TARGET_QUEUES = [
-    "1.1",
-    "1.2",
-    "2.1",
-    "2.2",
-    "3.1",
-    "3.2",
-    "4.1",
-    "4.2",
-    "5.1",
-    "5.2",
-    "6.1",
-    "6.2",
+    "1.1:",
+    "1.2:",
+    "2.1:",
+    "2.2:",
+    "3.1:",
+    "3.2:",
+    "4.1:",
+    "4.2:",
+    "5.1:",
+    "5.2:",
+    "6.1:",
+    "6.2:",
   ];
-
-  let foundMessage = ""; // This will store the text from the <p> tag
-
-  $("p").each((index, element) => {
-    if (foundMessage) {
-      return false; // Stop the loop once we find a match
-    }
-
-    const pText = $(element).text();
-    const includesAll = TARGET_QUEUES.every((queue) => pText.includes(queue));
-
-    if (includesAll) {
-      foundMessage = pText; // Save the text
-    }
+  const hash = {};
+  TARGET_QUEUES.forEach((t) => {
+    if (hash[t]) return;
+    hash[t] = "";
   });
 
+  let foundMessage = "";
+  let foundSpan = null;
+  const traverse = (node) => {
+    const style = $(node).attr("style") || "";
+    const text = $(node).text().trim();
+
+    if (
+      (style.includes("font-size: 20px") || style.includes("color: #ff0000")) &&
+      (text.includes("ГПВ") || text.includes("Запорізькій області"))
+    ) {
+      if (foundSpan !== null) {
+        return;
+      }
+      foundSpan = text;
+      return;
+    }
+    if (node.type === "text") {
+      const text = $(node).text().trim();
+      if (!text) return;
+
+      TARGET_QUEUES.forEach((queue) => {
+        const escaped = queue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // экранируем спецсимволы
+        const regex = new RegExp(`(^|\\s)${escaped}(?=\\s|$|\\p{P})`, "u");
+        if (regex.test(text) && !hash[queue]) {
+          hash[queue] = text;
+          console.log(`✅ Found ${queue}:`, text);
+        }
+      });
+
+      return;
+    }
+
+    if (node.children && node.children.length > 0) {
+      node.children.forEach(traverse);
+    }
+  };
+
+  // Recursive helper
+
+  // Start from the root
+  traverse($.root()[0]);
+  if (foundSpan && Object.keys(hash).length > 0) {
+    foundMessage += foundSpan;
+    foundMessage += "\n";
+    TARGET_QUEUES.forEach((queue) => {
+      foundMessage += queue + " " + hash[queue] + "\n";
+    });
+  }
   if (!foundMessage) {
     console.log(`Не найден <p> тег, который содержит все очереди.`);
     return;
   }
-
   const newContentForCheck = foundMessage;
-  const fullHeadingText = foundMessage;
   let oldContent = "";
   if (fs.existsSync(STORAGE_FILE)) {
     oldContent = fs.readFileSync(STORAGE_FILE, "utf8");
@@ -120,8 +156,7 @@ const processPage = async (data) => {
 
   const notificationContent = newContentForCheck;
 
-  // Make sure sendNotification is defined and imported
-  console.log("Pretending to send notification:", notificationContent);
+  console.log("Pretending to send notification:\n", notificationContent);
   sendNotification(notificationContent);
   fs.writeFileSync(STORAGE_FILE, newContentForCheck, "utf8");
 };
@@ -138,7 +173,7 @@ async function sendNotification(messageContent) {
 
   for (const chatId of subscribers) {
     try {
-      await bot.sendMessage(chatId, messageContent, { parse_mode: "Markdown" });
+      // await bot.sendMessage(chatId, messageContent, { parse_mode: "Markdown" });
       console.log(`Успешно отправлено ${chatId}`);
     } catch (error) {
       console.error(`Ошибка отправки ${chatId}: ${error}`);
