@@ -173,7 +173,7 @@ async function sendNotification(messageContent) {
 
   for (const chatId of subscribers) {
     try {
-      // await bot.sendMessage(chatId, messageContent, { parse_mode: "Markdown" });
+      await bot.sendMessage(chatId, messageContent, { parse_mode: "Markdown" });
       console.log(`Успешно отправлено ${chatId}`);
     } catch (error) {
       console.error(`Ошибка отправки ${chatId}: ${error}`);
